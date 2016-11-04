@@ -56,11 +56,11 @@ public class SampleDataActivity extends AppCompatActivity {
     private Sensor gyroSensor;
 
     private final int SAVE_ID = 0x1;
-    private Handler handler = new Handler(){
+    private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            if (msg.arg1 == SAVE_ID){
-                new AlertDialog.Builder(SampleDataActivity.this).setMessage("save?")
+            if (msg.arg1 == SAVE_ID) {
+                new AlertDialog.Builder(SampleDataActivity.this).setMessage("save data?")
                         .setNegativeButton("no", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
