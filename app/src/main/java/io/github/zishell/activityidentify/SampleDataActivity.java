@@ -116,7 +116,7 @@ public class SampleDataActivity extends AppCompatActivity {
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {//用户同意
                 saveSensorData();
             } else {
-                Log.d("==>", "用户拒绝授权修改存储卡");
+                ZLog.d(TAG, "用户拒绝授权修改存储卡");
             }
         }
     }
