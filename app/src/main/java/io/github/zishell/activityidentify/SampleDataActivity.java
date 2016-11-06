@@ -21,10 +21,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
+import io.github.zishell.activityidentify.model.Gesture;
 import io.github.zishell.utils.FileUtils;
 import io.github.zishell.utils.ZLog;
 
@@ -130,6 +135,65 @@ public class SampleDataActivity extends AppCompatActivity {
         initView();
         initSensor();
         setListener();
+
+        String g1f = Environment.getExternalStorageDirectory().getAbsolutePath() + "/SensorFiles/1478403428684.linear.csv";
+        String g2f = Environment.getExternalStorageDirectory().getAbsolutePath() + "/SensorFiles/1478403438418.linear.csv";
+        String g3f = Environment.getExternalStorageDirectory().getAbsolutePath() + "/SensorFiles/1478403448474.linear.csv";
+        String g4f = Environment.getExternalStorageDirectory().getAbsolutePath() + "/SensorFiles/1478404617102.linear.csv";
+
+        Gesture g1 = new Gesture();
+        g1.initFromCSVFile(g1f);
+        g1.normalization();
+        g1.cutOff();
+        Gesture g2 = new Gesture();
+        g2.initFromCSVFile(g2f);
+        g2.normalization();
+        g2.cutOff();
+        Gesture g3 = new Gesture();
+        g3.initFromCSVFile(g3f);
+        g3.normalization();
+        g3.cutOff();
+
+        Gesture g4= new Gesture();
+        g4.initFromCSVFile(g4f);
+        g4.normalization();
+        g4.cutOff();
+
+        float d11Base = DTW.getBaseGestureDistance(g1, g1);
+        float d12Base = DTW.getBaseGestureDistance(g1, g2);
+        float d13Base = DTW.getBaseGestureDistance(g1, g3);
+        float d23Base = DTW.getBaseGestureDistance(g2, g3);
+        float d32Base = DTW.getBaseGestureDistance(g3, g2);
+        float d14Base = DTW.getBaseGestureDistance(g1, g4);
+        float d24Base = DTW.getBaseGestureDistance(g2, g4);
+        float d34Base = DTW.getBaseGestureDistance(g3, g4);
+
+        System.out.println("==>Gesture Base d11: " + d11Base);
+        System.out.println("==>Gesture Base d12: " + d12Base);
+        System.out.println("==>Gesture Base d13: " + d13Base);
+        System.out.println("==>Gesture Base d23: " + d23Base);
+        System.out.println("==>Gesture Base d32: " + d32Base);
+        System.out.println("==>Gesture Base d14: " + d14Base);
+        System.out.println("==>Gesture Base d24: " + d24Base);
+        System.out.println("==>Gesture Base d34: " + d34Base);
+
+        float d11 = DTW.getGestureDistance(g1, g1);
+        float d12 = DTW.getGestureDistance(g1, g2);
+        float d13 = DTW.getGestureDistance(g1, g3);
+        float d23 = DTW.getGestureDistance(g2, g3);
+        float d32 = DTW.getGestureDistance(g3, g2);
+        float d14 = DTW.getGestureDistance(g1, g4);
+        float d24 = DTW.getGestureDistance(g2, g4);
+        float d34 = DTW.getGestureDistance(g3, g4);
+
+        System.out.println("==>Gesture d11: " + d11);
+        System.out.println("==>Gesture d12: " + d12);
+        System.out.println("==>Gesture d13: " + d13);
+        System.out.println("==>Gesture d23: " + d23);
+        System.out.println("==>Gesture d32: " + d32);
+        System.out.println("==>Gesture d14: " + d14);
+        System.out.println("==>Gesture d24: " + d24);
+        System.out.println("==>Gesture d34: " + d34);
     }
 
     private void initView() {
@@ -172,20 +236,8 @@ public class SampleDataActivity extends AppCompatActivity {
                             gyroFileName = FOLDER_NAME + "/" + ts + ".gyro.csv";
                             linearFileName = FOLDER_NAME + "/" + ts + ".linear.csv";
                             registerSensor();
-                            Thread.sleep(2500);
-                            unregisterSensor();
+//                            Thread.sleep(2500);
 
-                            Message msg = new Message();
-                            msg.arg1 = SAVE_ID;
-                            handler.sendMessage(msg);
-
-                            tvShowSampleState.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    tvShowSampleState.setText("end sampling");
-
-                                }
-                            });
                         } catch (InterruptedException e) {
                             Log.e(TAG, "Thread exception : " + e.toString());
                         }
@@ -200,6 +252,19 @@ public class SampleDataActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 isSampling = false;
+                unregisterSensor();
+                Message msg = new Message();
+                msg.arg1 = SAVE_ID;
+                handler.sendMessage(msg);
+
+                tvShowSampleState.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        tvShowSampleState.setText("end sampling");
+
+                    }
+                });
+
             }
         });
     }
@@ -236,29 +301,71 @@ public class SampleDataActivity extends AppCompatActivity {
         StringBuilder sbacc = new StringBuilder();
         StringBuilder sbgyro = new StringBuilder();
         StringBuilder sblinear = new StringBuilder();
-        for (Map.Entry<Long, float[]> entry : accData.entrySet()) {
-            long ts = entry.getKey();
-            float[] accValue = entry.getValue();
+
+        //asc sort
+        List<Map.Entry<Long, float[]>> listAccData = new ArrayList<>(accData.entrySet());
+        Collections.sort(listAccData, new Comparator<Map.Entry<Long, float[]>>() {
+                    @Override
+                    public int compare(Map.Entry<Long, float[]> o1, Map.Entry<Long, float[]> o2) {
+                        return (int) (o1.getKey() - o2.getKey());
+                    }
+                }
+        );
+        List<Map.Entry<Long, float[]>> listLinearData = new ArrayList<>(linearData.entrySet());
+        Collections.sort(listAccData, new Comparator<Map.Entry<Long, float[]>>() {
+                    @Override
+                    public int compare(Map.Entry<Long, float[]> o1, Map.Entry<Long, float[]> o2) {
+                        return (int) (o1.getKey() - o2.getKey());
+                    }
+                }
+        );
+        ArrayList<Float> lx = new ArrayList<>();
+        ArrayList<Float> ly = new ArrayList<>();
+        ArrayList<Float> lz = new ArrayList<>();
+        ArrayList<Float> ax = new ArrayList<>();
+        ArrayList<Float> ay = new ArrayList<>();
+        ArrayList<Float> az = new ArrayList<>();
+        ArrayList<Float> gx = new ArrayList<>();
+        ArrayList<Float> gy = new ArrayList<>();
+        ArrayList<Float> gz = new ArrayList<>();
+
+        for (int i = 0; i < listAccData.size(); i++) {
+            long ts = listAccData.get(i).getKey();
+            float[] accValue = listAccData.get(i).getValue();
             if (gyroData.containsKey(ts)) {
                 float[] gyroValue = gyroData.get(ts);
-                sbacc.append("acc," + ts + "," + accValue[0] + "," + accValue[1] + "," + accValue[2] + "\n");
-                sbgyro.append("gyro," + ts + "," + gyroValue[0] + "," + gyroValue[1] + "," + gyroValue[2] + "\n");
+                ax.add(accValue[0]);
+                ay.add(accValue[1]);
+                az.add(accValue[2]);
+                gx.add(gyroValue[0]);
+                gy.add(gyroValue[1]);
+                gz.add(gyroValue[2]);
+//                sbacc.append("acc," + ts + "," + accValue[0] + "," + accValue[1] + "," + accValue[2] + "\n");
+//                sbgyro.append("gyro," + ts + "," + gyroValue[0] + "," + gyroValue[1] + "," + gyroValue[2] + "\n");
             }
         }
-        for (Map.Entry<Long, float[]> entry : linearData.entrySet()) {
-            long ts = entry.getKey();
-            float[] linearValue = entry.getValue();
-            sblinear.append("linear," + ts + "," + linearValue[0] + "," + linearValue[1] + "," + linearValue[2] + "\n");
+        for (int i = 0; i < listLinearData.size(); i++) {
+            long ts = listLinearData.get(i).getKey();
+            float[] linearValue = listLinearData.get(i).getValue();
+            lx.add(linearValue[0]);
+            ly.add(linearValue[1]);
+            lz.add(linearValue[2]);
+//            sblinear.append("linear," + ts + "," + linearValue[0] + "," + linearValue[1] + "," + linearValue[2] + "\n");
         }
 
-        FileUtils.writeStringToFile(accFileName, sbacc.toString());
-        ZLog.d(TAG, "saved acc sensor data to " + accFileName);
+//        FileUtils.writeStringToFile(accFileName, sbacc.toString());
+//        ZLog.d(TAG, "saved acc sensor data to " + accFileName);
 
-        FileUtils.writeStringToFile(gyroFileName, sbgyro.toString());
-        ZLog.d(TAG, "saved gyro sensor data " + gyroFileName);
+//        FileUtils.writeStringToFile(gyroFileName, sbgyro.toString());
+//        ZLog.d(TAG, "saved gyro sensor data " + gyroFileName);
 
-        FileUtils.writeStringToFile(linearFileName, sblinear.toString());
-        ZLog.d(TAG, "saved linear sensor data " + linearFileName);
+//        FileUtils.writeStringToFile(linearFileName, sblinear.toString());
+//        ZLog.d(TAG, "saved linear sensor data " + linearFileName);
+
+        Gesture gestrue1 = new Gesture(lx, ly, lz, ax, ay, az, gx, gy, gz);
+        ZLog.d(TAG, gestrue1.toString());
+        gestrue1.saveToCSV(linearFileName);
+
 
         accData = null;
         gyroData = null;
